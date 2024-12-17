@@ -33,3 +33,8 @@ export function validateUserToken(token) {
   const data = jwt.verify(token, jwtSecretKey);
   return data;
 }
+
+export function generateVerificationCode() {
+  const code = Math.ceil(Math.random() * 1000) + 1234;
+  return code;
+}
