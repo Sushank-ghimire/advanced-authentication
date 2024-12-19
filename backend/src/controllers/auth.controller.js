@@ -5,7 +5,7 @@ import {
   generateUniquieUserId,
   generateVerificationCode,
   hashPassword,
-  compareHashPassword
+  compareHashPassword,
 } from "../helpers.js";
 
 const loginUser = asyncHandler(async (req, res) => {
@@ -13,9 +13,9 @@ const loginUser = asyncHandler(async (req, res) => {
 
   // Validate required fields
   if (!email || !password) {
-    return res.status(401).json(
-      new ApiError(401, "Email and password are required", false)
-    );
+    return res
+      .status(401)
+      .json(new ApiError(401, "Email and password are required", false));
   }
 
   // Retrieve user details from the database
@@ -109,6 +109,11 @@ const signUpUser = asyncHandler(async (req, res) => {
   );
 });
 
-const userLogout = asyncHandler(async (req, res) => {});
+const userLogout = asyncHandler(async (req, res) => {
+  res.clearCookie("userToken");
+  return res
+    .status(200)
+    .json(new ApiResponse(200, null, "User logged out successfully."));
+});
 
 export { loginUser, signUpUser, userLogout };
