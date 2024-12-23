@@ -1,5 +1,5 @@
 import { validateUserToken } from "../helpers.js";
-import ApiError from "../utils/ApiError";
+import ApiError from "../utils/ApiError.js";
 import asyncHandler from "../utils/AsyncHandler.js";
 
 const authMiddleware = asyncHandler(async (req, res, next) => {

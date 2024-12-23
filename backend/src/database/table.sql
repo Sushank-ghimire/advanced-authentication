@@ -11,8 +11,8 @@ CREATE TABLE IF NOT EXISTS users (
     isVerified BOOLEAN NOT NULL DEFAULT false,
     createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    resetPasswordToken VARCHAR(255),
+    resetPasswordToken VARCHAR(255) DEFAULT NULL,
     resetPassExpiry TIMESTAMP,
-    verificationToken VARCHAR(10) NOT NULL,
+    verificationToken VARCHAR(10) DEFAULT NULL,
     verificationTokenExpiry TIMESTAMP
 );

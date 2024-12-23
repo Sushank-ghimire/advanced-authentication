@@ -3,9 +3,9 @@ import pool from "../database/DbConfig.js";
 import {
   generateAccessToken,
   generateUniquieUserId,
-  generateVerificationCode,
   hashPassword,
   compareHashPassword,
+  generateVerificationCode,
 } from "../helpers.js";
 
 const loginUser = asyncHandler(async (req, res) => {
@@ -56,7 +56,7 @@ const loginUser = asyncHandler(async (req, res) => {
   return res.json(
     new ApiResponse(
       200,
-      { userId: user.userId, email: user.email },
+      { userId: user.userId, email: user.email, token },
       "User logged in successfully."
     )
   );
@@ -87,11 +87,10 @@ const signUpUser = asyncHandler(async (req, res) => {
   // Generate a unique user ID
   const userId = generateUniquieUserId();
 
-  const code = generateVerificationCode();
   // Insert the new user
   await pool.query(
-    "INSERT INTO users (userId, email, name, password, verificationToken) VALUES (?, ?, ?, ?, ?)",
-    [userId, email, name, hashedPassword, code]
+    "INSERT INTO users (userId, email, name, password) VALUES (?, ?, ?, ?)",
+    [userId, email, name, hashedPassword]
   );
 
   // Retrieve the newly created user
@@ -116,4 +115,9 @@ const userLogout = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, null, "User logged out successfully."));
 });
 
-export { loginUser, signUpUser, userLogout };
+const verifyEmailAddress = asyncHandler(async (req, res) => {
+  const verificationCode = generateVerificationCode();
+  const { email } = req.user;
+});
+
+export { loginUser, signUpUser, userLogout, verifyEmailAddress };
