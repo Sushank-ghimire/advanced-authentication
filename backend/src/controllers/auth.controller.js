@@ -7,6 +7,11 @@ import {
   compareHashPassword,
   generateVerificationCode,
 } from "../helpers.js";
+import {
+  sendForgotPasswordEmail,
+  sendVerifyEmail,
+  sendWelcomeEmail,
+} from "../mailtrap/MailtrapConfig.js";
 
 const loginUser = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
@@ -103,6 +108,7 @@ const signUpUser = asyncHandler(async (req, res) => {
   }
 
   // Send success response
+  sendWelcomeEmail(user[0].email);
   return res.json(
     new ApiResponse(201, user[0], "Account created successfully")
   );
@@ -115,9 +121,69 @@ const userLogout = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, null, "User logged out successfully."));
 });
 
-const verifyEmailAddress = asyncHandler(async (req, res) => {
+const sendCode = asyncHandler(async (req, res, next) => {
   const verificationCode = generateVerificationCode();
+  const { isVerification } = req.body;
   const { email } = req.user;
+  await pool.query("UPDATE users SET verificationCode = ? WHERE email = ?", [
+    verificationCode,
+    email,
+  ]);
+  if (isVerification) {
+    sendVerifyEmail(email, verificationCode);
+  } else {
+    sendForgotPasswordEmail(email, verificationCode);
+  }
+  next();
 });
 
-export { loginUser, signUpUser, userLogout, verifyEmailAddress };
+const verifyCode = asyncHandler(async (req, res) => {
+  const { code } = req.body;
+  const { email } = req.user;
+  const [user] = await pool.query("SELECT * FROM users WHERE email = ?", [
+    email,
+  ]);
+  const dbUser = user[0];
+  if (Number(dbUser.verificationCode) !== Number(code)) {
+    return res.json(new ApiError(401, "Invalid verification code", false));
+  }
+  return res.json(new ApiResponse(200, "Account verified", []));
+});
+
+const resetPassword = asyncHandler(async (req, res) => {
+  const { code, password } = req.body;
+  if (!code) {
+    return new ApiError(400, "Verification code is required", true);
+  }
+  const { email } = req.user;
+  const [user] = await pool.query("SELECT * FROM users WHERE email = ?", [
+    email,
+  ]);
+  const dbUser = user[0];
+  if (Number(dbUser.verificationCode) !== Number(code)) {
+    return res.json(new ApiError(401, "Invalid verification code", false));
+  }
+  const hashedPassword = await hashPassword(password);
+  const [isAffectedRow] = await pool.query(
+    "UPDATE users SET password = ? WHERE email = ?",
+    [hashedPassword, email]
+  );
+  if (!isAffectedRow.affectedRows) {
+    return res.json(
+      new ApiError(500, "Failed to update the user password", false)
+    );
+  }
+
+  return res.json(
+    new ApiResponse(200, "Successfully updated the user password")
+  );
+});
+
+export {
+  loginUser,
+  signUpUser,
+  userLogout,
+  sendCode,
+  resetPassword,
+  verifyCode,
+};
