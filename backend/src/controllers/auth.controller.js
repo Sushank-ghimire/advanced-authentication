@@ -5,7 +5,7 @@ import {
   generateUniquieUserId,
   hashPassword,
   compareHashPassword,
-  generateVerificationCode,
+  generateVerificationToken,
 } from "../helpers.js";
 import {
   sendForgotPasswordEmail,
@@ -121,69 +121,79 @@ const userLogout = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, null, "User logged out successfully."));
 });
 
-const sendCode = asyncHandler(async (req, res, next) => {
-  const verificationCode = generateVerificationCode();
-  const { isVerification } = req.body;
+const sendVerificationToken = asyncHandler(async (req, res, next) => {
+  const token = generateVerificationToken();
   const { email } = req.user;
-  await pool.query("UPDATE users SET verificationCode = ? WHERE email = ?", [
-    verificationCode,
-    email,
-  ]);
-  if (isVerification) {
-    sendVerifyEmail(email, verificationCode);
-  } else {
-    sendForgotPasswordEmail(email, verificationCode);
+  const [result] = await pool.query(
+    "UPDATE users SET verificationToken = ? WHERE email = ?",
+    [token, email]
+  );
+  if (result.affectedRows) {
+    sendVerifyEmail(email, token);
+    return res.json(
+      new ApiResponse(200, [], "Verification token send to the email")
+    );
   }
-  next();
+  return res.json(
+    new ApiError(500, "Error occured while sending the verification token")
+  );
 });
 
-const verifyCode = asyncHandler(async (req, res) => {
-  const { code } = req.body;
+const sendForgotPasswordToken = asyncHandler(async (req, res, next) => {
+  const token = generateVerificationToken();
   const { email } = req.user;
-  const [user] = await pool.query("SELECT * FROM users WHERE email = ?", [
+  const [result] = await pool.query(
+    "UPDATE users SET resetPasswordToken = ? WHERE email = ?",
+    [token, email]
+  );
+  if (result.affectedRows) {
+    sendForgotPasswordEmail(email, process.env.FRONTEND_DOMAIN + token);
+    return res.json(
+      new ApiResponse(200, [], "Reset password token send to the email")
+    );
+  }
+  return res.json(
+    new ApiError(500, "Error occured while sending the verification token")
+  );
+});
+
+const verifyUserToken = asyncHandler(async (req, res) => {
+  const { token } = req.query;
+  const { email } = req.user;
+  const [result] = await pool.execute("SELECT * FROM users WHERE email = ?", [
     email,
   ]);
-  const dbUser = user[0];
-  if (Number(dbUser.verificationCode) !== Number(code)) {
-    return res.json(new ApiError(401, "Invalid verification code", false));
+  const user = result[0];
+  if (user.verificationToken === token) {
+    return res.json(new ApiResponse(200, [], "User verified successfully"));
   }
-  return res.json(new ApiResponse(200, "Account verified", []));
+
+  return res.json(new ApiError(401, "Failed to verify user email"));
 });
 
 const resetPassword = asyncHandler(async (req, res) => {
-  const { code, password } = req.body;
-  if (!code) {
-    return new ApiError(400, "Verification code is required", true);
-  }
-  const { email } = req.user;
-  const [user] = await pool.query("SELECT * FROM users WHERE email = ?", [
-    email,
-  ]);
-  const dbUser = user[0];
-  if (Number(dbUser.verificationCode) !== Number(code)) {
-    return res.json(new ApiError(401, "Invalid verification code", false));
-  }
+  const { password } = req.body;
+  const { userId } = req.user;
   const hashedPassword = await hashPassword(password);
-  const [isAffectedRow] = await pool.query(
-    "UPDATE users SET password = ? WHERE email = ?",
-    [hashedPassword, email]
+  const [result] = await pool.query(
+    "UPDATE users SET password = ? WHERE userId = ?",
+    [hashedPassword, userId]
   );
-  if (!isAffectedRow.affectedRows) {
+
+  if (result.affectedRows) {
     return res.json(
-      new ApiError(500, "Failed to update the user password", false)
+      new ApiResponse(201, [], "User password changed successfully.")
     );
   }
-
-  return res.json(
-    new ApiResponse(200, "Successfully updated the user password")
-  );
+  return res.json(new ApiError(400, "Failed to change the user password"));
 });
 
 export {
   loginUser,
   signUpUser,
   userLogout,
-  sendCode,
+  sendVerificationToken,
   resetPassword,
-  verifyCode,
+  verifyUserToken,
+  sendForgotPasswordToken,
 };

@@ -3,19 +3,24 @@ import {
   loginUser,
   userLogout,
   signUpUser,
-  sendCode,
-  verifyCode,
+  sendVerificationToken,
+  verifyUserToken,
   resetPassword,
+  sendForgotPasswordToken,
 } from "../controllers/auth.controller.js";
 import authMiddleware from "../middleware/auth.middleware.js";
 
 const userAuthRoutes = Router();
 
+// User Authentication Routes
 userAuthRoutes.post("/login", loginUser);
 userAuthRoutes.post("/register", signUpUser);
 userAuthRoutes.delete("/logout", authMiddleware, userLogout);
-userAuthRoutes.post("/send-code", authMiddleware, sendCode);
-userAuthRoutes.post("/verify", userAuthRoutes, verifyCode);
-userAuthRoutes.post("/reset-password", authMiddleware, sendCode, resetPassword);
+
+// User Verification Routes
+userAuthRoutes.get("/verify", authMiddleware, sendVerificationToken);
+userAuthRoutes.post("/verify/:token", authMiddleware, verifyUserToken);
+userAuthRoutes.get("/reset-password", authMiddleware, sendForgotPasswordToken);
+userAuthRoutes.post("/reset-password/:token", authMiddleware, resetPassword);
 
 export default userAuthRoutes;

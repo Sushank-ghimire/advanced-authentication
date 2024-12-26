@@ -34,7 +34,6 @@ export function validateUserToken(token) {
   return data;
 }
 
-export function generateVerificationCode() {
-  const code = Math.ceil(Math.random() * 1000) + 1234;
-  return code;
+export function generateVerificationToken() {
+  return crypto.randomBytes(20).toString("hex");
 }
