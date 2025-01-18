@@ -1,7 +1,9 @@
 import { createLazyFileRoute } from "@tanstack/react-router";
+import NotFoundPage from "../components/NotFound";
 
 export const Route = createLazyFileRoute("/")({
   component: RouteComponent,
+  notFoundComponent: NotFoundPage,
 });
 
 function RouteComponent() {

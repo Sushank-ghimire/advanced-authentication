@@ -12,7 +12,7 @@ const MainLayout = ({ children }: Props) => {
     <main className="min-h-screen overflow-x-hidden w-screen bg-gradient-to-br via-green-900 to-emerald-900 from-gray-900 text-white">
       <section className="relative">
         {children}
-        {[...Array(8)].map((_, index) => (
+        {[...Array(10)].map((_, index) => (
           <FloatingShapes
             key={index}
             color={

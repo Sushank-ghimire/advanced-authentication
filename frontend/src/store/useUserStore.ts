@@ -1,13 +1,15 @@
 import { create } from "zustand";
 
 interface UserStoreTypes {
-  isLoading: boolean | null;
+  isLoading: boolean;
   loginUser: () => Promise<void>;
   signupUser: () => Promise<void>;
+  error: string | null;
 }
 
 const useUserStore = create<UserStoreTypes>((set, get) => ({
-  isLoading: null,
+  isLoading: false,
+  error: null,
   signupUser: async () => {},
   loginUser: async () => {},
 }));
